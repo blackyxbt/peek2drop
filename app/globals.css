@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* ===== BASE ===== */
+body {
+  background: #ffffff;
+  color: #111;
+  font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ===== HEADINGS ===== */
+h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+h2 {
+  font-size: 15px;
+  margin-top: 24px;
+}
+
+h3 {
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+/* ===== TERMINAL BLOCK ===== */
+.terminal {
+  white-space: pre-wrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== FORM ===== */
+.form-block {
+  max-width: 520px;
+  padding: 12px 0;
+  padding-left: 16px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.form-row label {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+/* inputs */
+.form-row input,
+.form-row select {
+  width: 100%;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+}
+
+.form-row input::placeholder {
+  color: #999;
+}
+
+.form-row input:focus,
+.form-row select:focus {
+  outline: none;
+  border-color: #111;
+}
+
+/* ===== BUTTON ===== */
+.action-row {
+  margin-top: 16px;
+}
+
+button {
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== POOL STATUS ===== */
+.pool-status {
+  margin-top: 8px;
+}
+
+.pool-status .row {
+  margin-bottom: 4px;
+}
+
+.pool-status .label {
+  font-weight: 600;
+}
+
+.pool-status .dim {
+  color: #777;
+}
+
+/* ===== TOP RECEIVERS ===== */
+.top-receivers {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 8px;
+}
+
+.top-receivers li {
+  margin: 4px 0;
+  white-space: nowrap;
+}
+
+
