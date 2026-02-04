@@ -96,7 +96,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="acrion-row">
+        <div className="action-row">
           <button onClick={submit} disabled={loading}>
             {loading ? "Scanning..." : "Analyze"}
           </button>
