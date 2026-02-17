@@ -1,7 +1,6 @@
 import axios from "axios";
 
 export const MAX_COUNT = "0x3e8";
-export const DECIMALS = 18n;
 
 export const CHAINS = {
   bsc: {
@@ -26,39 +25,48 @@ export const CHAINS = {
   },
 };
 
-export async function getContractCreationBlock(address, rpc) {
-  const latest = BigInt(
-    (
-      await axios.post(rpc, {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_blockNumber",
-        params: [],
-      })
-    ).data.result
-  );
+export async function getStartBlock(distributor, token, rpc) {
+  const res = await axios.post(rpc, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "alchemy_getAssetTransfers",
+    params: [
+      {
+        fromAddress: distributor,
+        contractAddresses: [token],
+        category: ["erc20"],
+        fromBlock: "0x0",
+        toBlock: "latest",
+        maxCount: "0x1",
+        order: "asc",
+      },
+    ],
+  });
 
-  let low = 0n;
-  let high = latest;
+  const transfers = res.data.result.transfers;
 
-  while (low < high) {
-    const mid = (low + high) / 2n;
-
-    const code = (
-      await axios.post(rpc, {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getCode",
-        params: [address, "0x" + mid.toString(16)],
-      })
-    ).data.result;
-
-    if (code === "0x") low = mid + 1n;
-    else high = mid;
+  if (!transfers || transfers.length === 0) {
+    return null;
   }
 
-  if (low === latest) throw new Error("Address is not a contract");
-  return low;
+  return BigInt(transfers[0].blockNum);
+}
+
+export async function getTokenDecimals(token, rpc) {
+  const res = await axios.post(rpc, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "eth_call",
+    params: [
+      {
+        to: token,
+        data: "0x313ce567", // decimals()
+      },
+      "latest",
+    ],
+  });
+
+  return BigInt(res.data.result);
 }
 
 export async function getTokenBalance(token, holder, rpc) {
@@ -75,3 +83,4 @@ export async function getTokenBalance(token, holder, rpc) {
 
   return BigInt(res.data.result);
 }
+

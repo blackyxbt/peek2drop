@@ -2,24 +2,44 @@ import axios from "axios";
 import {
   CHAINS,
   MAX_COUNT,
-  DECIMALS,
-  getContractCreationBlock,
+  getStartBlock,
   getTokenBalance,
+  getTokenDecimals,
 } from "../lib/alchemy";
 
 export async function POST(req) {
   try {
-    const { chain, tokenCA, distributorCA } = await req.json();
+    const { chain, tokenCA, distributorCA, manualBlock } =
+      await req.json();
 
     if (!CHAINS[chain]) {
-      return Response.json({ error: "Unsupported chain" }, { status: 400 });
+      return Response.json(
+        { error: "Unsupported chain" },
+        { status: 400 }
+      );
     }
 
     const rpc = CHAINS[chain].rpc(process.env.ALCHEMY_KEY);
 
-    const creationBlock = await getContractCreationBlock(distributorCA, rpc);
+    let startBlock = await getStartBlock(
+      distributorCA,
+      tokenCA,
+      rpc
+    );
+
+    if (!startBlock) {
+      if (!manualBlock) {
+        return Response.json({
+          requireManualBlock: true,
+        });
+      }
+      startBlock = BigInt(manualBlock);
+    }
+
     const fromBlock =
-      creationBlock > 5n ? creationBlock - 5n : creationBlock;
+      startBlock > 5n ? startBlock - 5n : startBlock;
+
+    const decimals = await getTokenDecimals(tokenCA, rpc);
 
     let pageKey = null;
     const recipients = {};
@@ -47,9 +67,12 @@ export async function POST(req) {
 
       for (const tx of result.transfers) {
         if (!tx.to) continue;
+
         const amount = BigInt(tx.rawContract.value);
+
         tokensDistributed += amount;
-        recipients[tx.to] = (recipients[tx.to] || 0n) + amount;
+        recipients[tx.to] =
+          (recipients[tx.to] || 0n) + amount;
       }
 
       pageKey = result.pageKey;
@@ -63,16 +86,20 @@ export async function POST(req) {
 
     const total = tokensDistributed + remaining;
 
-    const entries = Object.entries(recipients).sort((a, b) =>
-        (a[1] < b[1] ? 1 : -1)).map(([address, amount]) =>
-            ({address,amount: (amount / 10n ** DECIMALS).toString(),}));
-
+    const entries = Object.entries(recipients)
+      .sort((a, b) => (a[1] < b[1] ? 1 : -1))
+      .map(([address, amount]) => ({
+        address,
+        amount: (amount / 10n ** decimals).toString(),
+      }));
 
     return Response.json({
       chain: CHAINS[chain].name,
-      total: (total / 10n ** DECIMALS).toString(),
-      claimed: (tokensDistributed / 10n ** DECIMALS).toString(),
-      unclaimed: (remaining / 10n ** DECIMALS).toString(),
+      startBlock: fromBlock.toString(),
+      walletCount: entries.length,
+      total: (total / 10n ** decimals).toString(),
+      claimed: (tokensDistributed / 10n ** decimals).toString(),
+      unclaimed: (remaining / 10n ** decimals).toString(),
       recipients: entries,
     });
   } catch (err) {

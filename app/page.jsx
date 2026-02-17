@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-/* ===== formatting helpers (ADDED) ===== */
 const fmt = (value) => {
   const n = Number(value);
   if (isNaN(n)) return value;
@@ -25,7 +24,6 @@ const pct = (v, total) => {
   if (!t) return "0%";
   return ((a / t) * 100).toFixed(1) + "%";
 };
-/* ===================================== */
 
 export default function Home() {
   const [form, setForm] = useState({
@@ -36,18 +34,34 @@ export default function Home() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [manualBlock, setManualBlock] = useState("");
 
-  const submit = async () => {
+  const submit = async (overrideBlock = null) => {
     setLoading(true);
-    setData(null);
+
+    // Only clear data when first submitting
+    if (!overrideBlock) {
+      setData(null);
+    }
 
     const res = await fetch("/api", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        manualBlock: overrideBlock || undefined,
+      }),
     });
 
     const json = await res.json();
+
+    if (json.requireManualBlock) {
+      setData({ requireManualBlock: true });
+      setLoading(false);
+      return;
+    }
+
+    setManualBlock("");
     setData(json);
     setLoading(false);
   };
@@ -97,22 +111,49 @@ export default function Home() {
         </div>
 
         <div className="action-row">
-          <button onClick={submit} disabled={loading}>
+          <button onClick={() => submit()} disabled={loading}>
             {loading ? "Scanning..." : "Analyze"}
           </button>
         </div>
       </div>
 
-      {data?.error && (
-        <p style={{ color: "red" }}>{data.error}</p>
+      {data?.requireManualBlock && (
+        <div style={{ marginTop: 20 }}>
+          <p>
+            Looks like distributor is a wallet. Enter block number manually:
+          </p>
+          <input
+            placeholder="Block Number"
+            value={manualBlock}
+            onChange={(e) =>
+              setManualBlock(e.target.value)
+            }
+          />
+          <button
+            onClick={() => submit(manualBlock)}
+            disabled={!manualBlock || loading}
+          >
+            Continue
+          </button>
+        </div>
       )}
 
-      {data && !data.error && (
+      {data && !data.error && !data.requireManualBlock && (
         <>
           <h2>📦 Airdrop Pool Status</h2>
 
           <div className="terminal">
             <div className="pool-status">
+
+              <div>
+                <span className="label">Scanned from Block:</span>{" "}
+                {data.startBlock}
+              </div>
+
+              <div>
+                <span className="label">Total Wallets claimed:</span>{" "}
+                {fmt(data.walletCount)}
+              </div>
 
               <div className="row">
                 <span className="label">Total Airdrop Pool:</span>{" "}
@@ -153,4 +194,5 @@ export default function Home() {
     </main>
   );
 }
+
 
